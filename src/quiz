@@ -1,0 +1,278 @@
+  
+  
+  const QuizPage = () => {
+    const [selectedOptions, setSelectedOptions] = useState({});
+
+    const handleOptionSelect = (questionId, optionIndex) => {
+      setSelectedOptions({
+        ...selectedOptions,
+        [questionId]: optionIndex
+      });
+    };
+
+    const handleSubmitQuiz = () => {
+      setQuizAnswers(selectedOptions);
+      submitQuiz();
+    };
+     const completeLevel = () => {
+    if (quizResults && quizResults.passed) {
+      // فتح المستوى التالي
+      const courseIndex = courses.findIndex(c => c.id === selectedCourse.id);
+      const levelIndex = selectedCourse.levels.findIndex(l => l.id === selectedLevel.id);
+      
+      if (levelIndex < selectedCourse.levels.length - 1) {
+        const updatedCourses = [...courses];
+        updatedCourses[courseIndex].levels[levelIndex + 1].isUnlocked = true;
+        setCourses(updatedCourses);
+      }
+    }
+    setCurrentPage("courseLevels");
+    setQuizAnswers({});
+    setQuizResults(null);
+  };
+  const submitQuiz = () => {
+    if (!selectedLevel || !selectedLevel.quiz) return;
+
+    let correctAnswers = 0;
+    const results = selectedLevel.quiz.questions.map((question, index) => {
+      const userAnswer = quizAnswers[question.id];
+      const isCorrect = userAnswer === question.correctAnswer;
+      if (isCorrect) correctAnswers++;
+      return {
+        ...question,
+        userAnswer,
+        isCorrect
+      };
+    });
+
+    setQuizResults({
+      score: Math.round((correctAnswers / selectedLevel.quiz.questions.length) * 100),
+      results,
+      passed: correctAnswers >= selectedLevel.quiz.questions.length * 0.7
+    });
+
+    setCurrentPage("quizResults");
+  };
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* الهيدر */}
+        <header className="bg-white shadow-sm">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={() => setCurrentPage("lectures")}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  ← العودة للمحاضرات
+                </button>
+                <h1 className="text-2xl font-bold">اختبار {selectedLevel?.name}</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                {currentUser && (
+                  <>
+                    <button 
+                      onClick={() => setCurrentPage("profile")}
+                      className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg"
+                    >
+                      <UserIcon />
+                      <span>{currentUser.name}</span>
+                    </button>
+                    <button 
+                      onClick={handleLogout}
+                      className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                    >
+                      <LogOutIcon />
+                      <span>خروج</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* محتوى الاختبار */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow-sm p-8 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 text-center">الاختبار النهائي</h2>
+            <p className="text-center text-gray-600 mb-8">
+              يتكون الاختبار من 10 أسئلة اختيار متعدد. تحتاج إلى 70% للنجاح.
+            </p>
+            
+            <div className="space-y-8">
+              {selectedLevel?.quiz?.questions.map((question, index) => (
+                <div key={question.id} className="border border-gray-200 rounded-lg p-6 transition-all duration-300 hover:shadow-md">
+                  <h3 className="text-lg font-bold mb-4">
+                    السؤال {index + 1}: {question.question}
+                  </h3>
+                  <div className="space-y-3">
+                    {question.options.map((option, optionIndex) => (
+                      <label 
+                        key={optionIndex}
+                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedOptions[question.id] === optionIndex
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:bg-gray-50"
+                        }`}
+                        onClick={() => handleOptionSelect(question.id, optionIndex)}
+                      >
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedOptions[question.id] === optionIndex
+                            ? "border-blue-500 bg-blue-500"
+                            : "border-gray-300"
+                        }`}>
+                          {selectedOptions[question.id] === optionIndex && (
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          )}
+                        </div>
+                        <span>{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-8 text-center">
+              <button 
+                onClick={handleSubmitQuiz}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition transform hover:scale-105"
+              >
+                إرسال الإجابات
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // صفحة نتائج الاختبار
+  const QuizResultsPage = () => (
+    <div className="min-h-screen bg-gray-50">
+      {/* الهيدر */}
+      <header className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <button 
+                onClick={() => setCurrentPage("quiz")}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                ← العودة للاختبار
+              </button>
+              <h1 className="text-2xl font-bold">نتائج الاختبار</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              {currentUser && (
+                <>
+                  <button 
+                    onClick={() => setCurrentPage("profile")}
+                    className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg"
+                  >
+                    <UserIcon />
+                    <span>{currentUser.name}</span>
+                  </button>
+                  <button 
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                  >
+                    <LogOutIcon />
+                    <span>خروج</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* نتائج الاختبار */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow-sm p-8 max-w-3xl mx-auto">
+          <div className={`text-center p-8 rounded-lg mb-8 transition-all duration-500 ${
+            quizResults?.passed ? "bg-green-100" : "bg-red-100"
+          }`}>
+            <div className="text-6xl font-bold mb-4 animate-pulse">
+              {quizResults?.score}%
+            </div>
+            <h2 className="text-2xl font-bold mb-2">
+              {quizResults?.passed ? "🎉 مبارك! لقد نجحت" : "❌ لم تنجح هذه المرة"}
+            </h2>
+            <p className="text-lg">
+              {quizResults?.passed 
+                ? "لقد اجتزت الاختبار بنجاح. يمكنك الآن الانتقال للمستوى التالي." 
+                : "تحتاج إلى 70% للنجاح. يرجى مراجعة المادة والمحاولة مرة أخرى."}
+            </p>
+          </div>
+
+          {/* تفاصيل الإجابات */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold mb-4">تفاصيل الإجابات:</h3>
+            {quizResults?.results.map((result, index) => (
+              <div 
+                key={result.id} 
+                className={`border rounded-lg p-6 transition-all duration-300 ${
+                  result.isCorrect ? "border-green-300 bg-green-50" : "border-red-300 bg-red-50"
+                }`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <h4 className="text-lg font-bold">
+                    السؤال {index + 1}: {result.question}
+                  </h4>
+                  {result.isCorrect ? (
+                    <CheckCircleIcon />
+                  ) : (
+                    <XCircleIcon />
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-medium mb-2">إجابتك:</p>
+                    <p className={`p-3 rounded ${
+                      result.isCorrect ? "bg-green-200" : "bg-red-200"
+                    }`}>
+                      {result.options[result.userAnswer] || "لم تجب"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium mb-2">الإجابة الصحيحة:</p>
+                    <p className="p-3 rounded bg-green-200">
+                      {result.options[result.correctAnswer]}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            {quizResults?.passed ? (
+              <button 
+                onClick={completeLevel}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold mr-4 transition transform hover:scale-105"
+              >
+                الانتقال للمستوى التالي
+              </button>
+            ) : (
+              <button 
+                onClick={() => setCurrentPage("quiz")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold mr-4 transition transform hover:scale-105"
+              >
+                إعادة المحاولة
+              </button>
+            )}
+            <button 
+              onClick={() => setCurrentPage("courseLevels")}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 rounded-lg font-bold transition transform hover:scale-105"
+            >
+              العودة لمستويات الدورة
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );

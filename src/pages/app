@@ -1,0 +1,176 @@
+// src/App.jsx
+import React, { useState } from "react";
+import HomePage from "./pages/Homepage";
+import Login from "./pages/LoginPage";
+import Register from "./pages/RegisterPage";
+import CoursePage from "./pages/CoursesPage";
+import CourseDetails from "./pages/CourseDetails";
+import CourseLevels from "./pages/CourseLevelsPage";
+import Lectures from "./pages/LecturesPage";
+import Quiz from "./pages/QuizPage";
+import Profile from "./pages/ProfilePage";
+import AdminDashboard from "./pages/AdminPage";
+import TrainerDashboard from "./pages/TrainerPage";
+import AdminCourses from "./pages/AdminCourses";
+import AdminUsers from "./pages/AdminUsers";
+import { courses } from "./data/Courses";
+const App = () => {
+  const [currentPage, setCurrentPage] = useState("home");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentCourse, setCurrentCourse] = useState(null);
+
+  // ← الدورات المخزنة (ستتغير ديناميكيًا)
+  const [courses, setCourses] = useState([
+    {
+      id: 1,
+      title: "التسويق الرقمي المتقدم",
+      instructor: "سارة أحمد",
+      duration: "52 ساعة",
+      level: "متوسط",
+      students: 3120,
+      rating: 4.7,
+      image: "https://picsum.photos/600/400",
+      description: "في هذه الدورة، ستتعلم استراتيجيات التسويق الرقمي الحديثة، بما في ذلك التسويق عبر وسائل التواصل الاجتماعي، التسويق بالمحتوى، وتحسين محركات البحث (SEO)."
+    },
+    {
+      id: 2,
+      title: "تطوير تطبيقات الويب",
+      instructor: "محمد خالد",
+      duration: "75 ساعة",
+      level: "متقدم",
+      students: 2840,
+      rating: 4.9,
+      image: "https://picsum.photos/600/401",
+      description: "احترف تطوير تطبيقات الويب باستخدام HTML, CSS, JavaScript, React, وNode.js."
+    },
+    {
+      id: 3,
+      title: "التصميم الجرافيكي الاحترافي",
+      instructor: "ليلى حسن",
+      duration: "45 ساعة",
+      level: "متوسط",
+      students: 2450,
+      rating: 4.8,
+      image: "https://picsum.photos/600/402",
+      description: "احترف فن التصميم الجرافيكي باستخدام أدوات مثل Adobe Photoshop وIllustrator."
+    }
+  ]);
+
+  const navigateTo = (page, course = null) => {
+    if (course) {
+      setCurrentCourse(course);
+    }
+    setCurrentPage(page);
+  };
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    if (user.role === 'admin') {
+      navigateTo("admin-dashboard");
+    } else {
+      navigateTo("courses");
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    navigateTo("home");
+  };
+
+  // ← دالة لإضافة دورة جديدة
+ const addCourse = (newCourse) => {
+  const course = {
+    ...newCourse,
+    id: courses.length + 1,
+    students: Math.floor(Math.random() * 500) + 100,
+    rating: 4.5 + Math.random() * 0.5
+  };
+  setCourses([...courses, course]);
+};
+
+const editCourse = (updatedCourse) => {
+  setCourses(courses.map(c => c.id === updatedCourse.id ? updatedCourse : c));
+};
+
+const deleteCourse = (courseId) => {
+  setCourses(courses.filter(c => c.id !== courseId));
+};
+
+const assignTrainer = (userId) => {
+  setUsers(users.map(u => u.id === userId ? { ...u, role: "مدرب" } : u));
+};
+
+const deleteUser = (userId) => {
+  setUsers(users.filter(u => u.id !== userId));
+};
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case "home":
+        return <HomePage navigateTo={navigateTo} currentUser={currentUser} handleLogout={handleLogout} />;
+      case "login":
+        return <Login navigateTo={navigateTo} handleLogin={handleLogin} currentUser={currentUser} />;
+      case "register":
+        return <Register navigateTo={navigateTo} handleLogin={handleLogin} />;
+      case "courses":
+        return <CoursePage 
+                navigateTo={navigateTo} 
+                currentUser={currentUser} 
+                handleLogout={handleLogout}
+                courses={courses} // ← مرر الدورات
+              />;
+      case "course-details":
+        return <CourseDetails 
+                navigateTo={navigateTo} 
+                currentUser={currentUser} 
+                handleLogout={handleLogout}
+                course={currentCourse}
+              />;
+      case "course-levels":
+        return <CourseLevels 
+                navigateTo={navigateTo} 
+                currentUser={currentUser} 
+                handleLogout={handleLogout}
+                course={currentCourse}
+              />;
+      case "lectures":
+        return <Lectures 
+                navigateTo={navigateTo} 
+                currentUser={currentUser} 
+                handleLogout={handleLogout}
+                course={currentCourse}
+              />;
+      case "quiz":
+        return <Quiz 
+                navigateTo={navigateTo} 
+                currentUser={currentUser} 
+                handleLogout={handleLogout}
+                course={currentCourse}
+              />;
+      case "profile":
+        return <Profile 
+                navigateTo={navigateTo} 
+                currentUser={currentUser} 
+                handleLogout={handleLogout}
+              />;
+      case "admin-dashboard":
+        return <AdminDashboard 
+                navigateTo={navigateTo} 
+                currentUser={currentUser}
+                users={users}
+                courses={courses} // ← مرر الدورات
+                addCourse={addCourse} // ← أرسل دالة الإضافة
+              />;
+      default:
+        return <HomePage navigateTo={navigateTo} currentUser={currentUser} handleLogout={handleLogout} />;
+    }
+  };
+
+  return (
+    <div className="App">
+      {renderPage()}
+    </div>
+  );
+};
+
+export default App;

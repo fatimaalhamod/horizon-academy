@@ -1,0 +1,363 @@
+import React, { useState } from "react";
+
+const RegisterPage = ({ handleRegister, navigateTo }) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [generatedCode, setGeneratedCode] = useState("");
+  const [verificationError, setVerificationError] = useState("");
+
+  // التحقق من صحة المدخلات
+  const validateForm = () => {
+    const newErrors = {};
+
+    // التحقق من الاسم
+    if (!formData.name.trim()) {
+      newErrors.name = "الاسم مطلوب";
+    } else if (formData.name.trim().length < 3) {
+      newErrors.name = "الاسم يجب أن يكون 3 أحرف على الأقل";
+    }
+
+    // التحقق من البريد الإلكتروني
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email) {
+      newErrors.email = "البريد الإلكتروني مطلوب";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "البريد الإلكتروني غير صحيح";
+    }
+
+    // التحقق من كلمة المرور
+    if (!formData.password) {
+      newErrors.password = "كلمة المرور مطلوبة";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
+    }
+
+    // التحقق من تأكيد كلمة المرور
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "تأكيد كلمة المرور مطلوب";
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "كلمات المرور غير متطابقة";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // التعامل مع تغييرات الحقول
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+
+    // مسح الخطأ عند الكتابة
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ""
+      });
+    }
+  };
+
+  // إرسال رمز التحقق
+  const sendVerificationCode = () => {
+    // توليد رمز عشوائي مكون من 6 أرقام
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedCode(code);
+    
+    // في التطبيق الحقيقي يتم إرسال الرمز بالفعل إلى البريد الإلكتروني
+    console.log("رمز التحقق المرسل:", code);
+    
+    return code;
+  };
+
+  // التعامل مع إرسال النموذج
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (validateForm()) {
+      setIsLoading(true);
+      
+      // إرسال رمز التحقق
+      sendVerificationCode();
+      
+      // عرض نافذة التحقق
+      setTimeout(() => {
+        setShowVerificationModal(true);
+        setIsLoading(false);
+      }, 1000);
+    }
+  };
+
+  // التحقق من الرمز
+  const verifyCode = () => {
+    if (verificationCode === generatedCode) {
+      // الرمز صحيح - إنشاء الحساب
+      handleRegister(formData.name, formData.email, formData.password);
+      setShowVerificationModal(false);
+      setVerificationCode("");
+      setVerificationError("");
+      navigateTo("courses"); // الانتقال إلى صفحة الدورات
+    } else {
+      // الرمز خاطئ
+      setVerificationError("رمز التحقق خطأ");
+    }
+  };
+
+  // إعادة إرسال رمز التحقق
+  const resendCode = () => {
+    sendVerificationCode();
+    setVerificationCode("");
+    setVerificationError("");
+    alert("تم إعادة إرسال رمز التحقق إلى بريدك الإلكتروني");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 animate-fade-in-up">
+        <div className="text-center mb-8">
+          <img 
+            src="https://placehold.co/150x50?text=أكاديمية+الأفق" 
+            alt="أكاديمية الأفق" 
+            className="mx-auto h-12 mb-4"
+          />
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">إنشاء حساب جديد</h1>
+          <p className="text-gray-600">انضم إلينا اليوم</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              الاسم الكامل
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border ${
+                errors.name ? "border-red-500" : "border-gray-300"
+              } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition`}
+              placeholder="أحمد محمد"
+            />
+            {errors.name && (
+              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              البريد الإلكتروني
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border ${
+                errors.email ? "border-red-500" : "border-gray-300"
+              } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition`}
+              placeholder="example@email.com"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              كلمة المرور
+            </label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border ${
+                errors.password ? "border-red-500" : "border-gray-300"
+              } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition`}
+              placeholder="••••••••"
+            />
+            {errors.password && (
+              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              تأكيد كلمة المرور
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border ${
+                errors.confirmPassword ? "border-red-500" : "border-gray-300"
+              } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition`}
+              placeholder="••••••••"
+            />
+            {errors.confirmPassword && (
+              <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+            )}
+          </div>
+
+          <button 
+            type="submit"
+            disabled={isLoading}
+            className={`w-full ${
+              isLoading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+            } text-white py-3 rounded-lg font-bold transition transform hover:scale-105`}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                جاري الإنشاء...
+              </div>
+            ) : (
+              "إنشاء الحساب"
+            )}
+          </button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-gray-600">
+            لديك حساب بالفعل؟{" "}
+            <button 
+              onClick={() => navigateTo("login")}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              تسجيل الدخول
+            </button>
+          </p>
+        </div>
+      </div>
+
+      {/* نافذة رمز التحقق */}
+      {showVerificationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-fade-in-up">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">رمز التحقق</h2>
+              <p className="text-gray-600">
+                تم إرسال رمز التحقق إلى بريدك الإلكتروني
+              </p>
+            </div>
+
+            {verificationError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 animate-shake">
+                {verificationError}
+              </div>
+            )}
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                أدخل الرمز المكون من 6 أرقام
+              </label>
+              <input
+                type="text"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl tracking-widest"
+                placeholder="------"
+                maxLength="6"
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={verifyCode}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition transform hover:scale-105"
+              >
+                تحقق
+              </button>
+              <button 
+                onClick={resendCode}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-bold transition"
+              >
+                إعادة الإرسال
+              </button>
+              <button 
+                onClick={() => {
+                  setShowVerificationModal(false);
+                  setVerificationCode("");
+                  setVerificationError("");
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold transition"
+              >
+                إلغاء
+              </button>
+            </div>
+
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-500">
+                لم يصلك الرمز؟ تحقق من مجلد البريد المزعج
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* أنماط CSS مخصصة */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
+        .animate-fade-in-up {
+          animation: fade-in-up 0.3s ease-out;
+        }
+        
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default RegisterPage;

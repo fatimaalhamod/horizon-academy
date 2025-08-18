@@ -1,0 +1,155 @@
+// src/pages/CourseLevelsPage.jsx
+import React, { useState, useEffect } from 'react';
+
+const CourseLevels = ({ navigateTo, currentUser, handleLogout, course }) => {
+  // ✅ التحقق من وجود الدورة والمستويات
+  if (!course || !course.levels || !Array.isArray(course.levels)) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-xl shadow-lg text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">لم يتم العثور على الدورة أو المستويات</h2>
+          <button
+            onClick={() => navigateTo("courses")}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+          >
+            العودة إلى الدورات
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const [userProgress, setUserProgress] = useState({});
+  const [selectedLevel, setSelectedLevel] = useState(null);
+
+  // ✅ تحديث التقدم من localStorage
+  useEffect(() => {
+    const key = `progress_${currentUser.email}_${course.id}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        setUserProgress(JSON.parse(saved));
+      } catch (e) {
+        console.error("فشل في تحليل بيانات التقدم", e);
+      }
+    }
+  }, [currentUser.email, course.id]);
+
+  // ✅ التحقق من حالة المستوى
+  const isLevelLocked = (levelId) => {
+    if (levelId === 1) return false;
+    return !userProgress[`level_${levelId - 1}`]?.completed;
+  };
+
+  const isLevelCompleted = (levelId) => {
+    return userProgress[`level_${levelId}`]?.completed;
+  };
+
+  const startLevel = (level) => {
+    if (isLevelLocked(level.id)) return;
+    setSelectedLevel(level);
+  };
+
+  const goBack = () => {
+    if (selectedLevel) {
+      setSelectedLevel(null);
+    } else {
+      navigateTo("course-details", course);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* الهيدر */}
+      <header className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <img src="/assets/logo.png" alt="أكاديمية الأفق" className="h-12" />
+            </div>
+            <div className="flex items-center space-x-4">
+              {currentUser ? (
+                <>
+                  <button onClick={() => navigateTo("profile")} className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
+                    <span>{currentUser.name}</span>
+                  </button>
+                  <button onClick={handleLogout} className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                    <span>خروج</span>
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        {/* زر العودة */}
+        <div className="mb-8">
+          <button onClick={goBack} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition flex items-center">
+            ← العودة إلى تفاصيل الدورة
+          </button>
+        </div>
+
+        {/* معلومات الدورة */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">{course.title}</h1>
+            <p className="text-gray-600">بواسطة: {course.instructor?.name}</p>
+            <div className="flex space-x-4 mt-2 text-sm text-gray-500">
+              <span>إجمالي المستويات: {course.levels.length}</span>
+              <span>المكتملة: {Object.values(userProgress).filter(p => p.completed).length}</span>
+            </div>
+          </div>
+          <img src={course.image} alt={course.title} className="w-24 h-24 object-cover rounded-lg" />
+        </div>
+
+        {/* عنوان القائمة */}
+        <h2 className="text-3xl font-bold text-center mb-12">اختر مستوى للدراسة</h2>
+
+        {/* قائمة المستويات */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {course.levels.map((level) => {
+            const locked = isLevelLocked(level.id);
+            const completed = isLevelCompleted(level.id);
+
+            return (
+              <div key={level.id} className={`bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 ${locked ? 'opacity-60' : 'hover:shadow-xl'}`}>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold mb-2">{level.title}</h3>
+                  <p className="text-gray-600 mb-4">{level.description}</p>
+                  <div className="flex justify-between items-center mb-4 text-sm text-gray-500">
+                    <span>📚 {level.lectures?.length || 0} محاضرات</span>
+                    <span>⏱️ {level.duration || "4 ساعات"}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      completed ? 'bg-green-100 text-green-800' :
+                      locked ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {completed ? 'مكتمل' : locked ? 'مقفل' : 'مفتوح'}
+                    </span>
+                    {!locked && !completed ? (
+                      <button
+                         onClick={() => navigateTo("lectures", course)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition transform hover:scale-105"
+                      >
+                        ابدأ المحاضرات
+                      </button>
+                    ) : (
+                      <button disabled className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm cursor-not-allowed">
+                        مقفل
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default CourseLevels;
