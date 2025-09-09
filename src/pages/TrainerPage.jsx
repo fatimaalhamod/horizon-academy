@@ -1,7 +1,7 @@
 // src/pages/TrainerDashboard.js
 import React, { useState } from "react";
 
-const TrainerDashboard = ({ navigateTo, currentUser, courses, setCourses }) => {
+const TrainerDashboard = ({ navigateTo, currentUser,  handleLogout , courses, setCourses }) => {
   const [activeTab, setActiveTab] = useState("courses");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showAddLevelModal, setShowAddLevelModal] = useState(false);
@@ -307,7 +307,7 @@ const TrainerDashboard = ({ navigateTo, currentUser, courses, setCourses }) => {
         <header className="bg-white shadow-sm mb-8 p-6 rounded-lg flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-800">لوحة تحكم المدرب</h2>
           <button
-            onClick={() => navigateTo("home")}
+            onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
           >
             تسجيل الخروج

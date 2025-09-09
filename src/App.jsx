@@ -16,17 +16,12 @@ import Register from "./pages/Register";
 import CoursePage from "./pages/CoursesPage";
 import CourseDetails from "./pages/CourseDetails";
 import CourseLevels from "./pages/CourseLevelsPage";
-import Lectures from "./pages/LecturesPage";
-import Quiz from "./pages/QuizPage";
-import QuizResultsPage from "./pages/QuizResultsPage";
 import Profile from "./pages/ProfilePage";
 import AdminDashboard from "./pages/AdminPage";
 import TrainerDashboard from "./pages/TrainerPage";
-import AdminCourses from "./pages/AdminCourses";
-import AdminUsers from "./pages/AdminUsers";
 import ForgotPassword from "./pages/ForgotPassword";
 import ErrorBoundary from "./components/ErrorBoundary";
-
+import CertificatePage from "./pages/CertificatePage";
 const App = () => {
   const [currentPage, setCurrentPage] = useState("home");
   const [currentUser, setCurrentUser] = useState(null);
@@ -455,6 +450,8 @@ localStorage.setItem("currentUser", JSON.stringify(userWithProgress));
         return <HomePage navigateTo={navigateTo} currentUser={currentUser} handleLogout={handleLogout} />;
       case "login":
         return <Login navigateTo={navigateTo} handleLogin={handleLogin} currentUser={currentUser} />;
+      case "forgot-password":
+        return <ForgotPassword navigateTo={navigateTo} />;
       case "register":
         return <Register navigateTo={navigateTo} handleRegister={handleRegister} />;
       case "courses":
@@ -463,46 +460,13 @@ localStorage.setItem("currentUser", JSON.stringify(userWithProgress));
         return <CourseDetails navigateTo={navigateTo} currentUser={currentUser} handleLogout={handleLogout} course={currentCourse} />;
       case "course-levels":
         return <CourseLevels navigateTo={navigateTo} currentUser={currentUser} handleLogout={handleLogout} course={currentCourse} />;
-    // داخل renderPage، عدّلي حالة "lectures" كما يلي:
-case "lectures": {
-  //  تأكد من وجود currentCourse
-  if (!currentCourse) {
-    console.error("currentCourse غير معرّف");
-    return <div>خطأ: لم يتم العثور على الدورة</div>;
-  }
-
-  //  استرجاع levelId من localStorage
-  const levelId = localStorage.getItem("currentLevelId");
-  const courseLevels = currentCourse.levels || [];
-  const activeLevel = courseLevels.find(l => l.id === parseInt(levelId)) || courseLevels[0];
-
-  return <Lectures 
-    navigateTo={navigateTo} 
-    currentUser={currentUser} 
-    handleLogout={handleLogout} 
-    course={currentCourse} 
-    selectedLevel={activeLevel} 
-  />;
-}
-     case "quiz":
-  //  استرجاع levelId من localStorage
-  const levelId = localStorage.getItem("currentLevelId");
-  const courseLevels = currentCourse?.levels || [];
-  const activeLevel = courseLevels.find(l => l.id === parseInt(levelId)) || courseLevels[0];
-
-  return <Quiz 
-    navigateTo={navigateTo} 
-    currentUser={currentUser} 
-    handleLogout={handleLogout} 
-    course={currentCourse} 
-    levelId={levelId} 
-  />;
-        case "quizResults":
-  return <QuizResultsPage
-    quizResults={quizResults}
-    completeLevel={completeLevel}
-    selectedLevel={selectedLevel}
-  />;
+case "certificate":
+        return <CertificatePage 
+          navigateTo={navigateTo} 
+          currentUser={currentUser} 
+          handleLogout={handleLogout}
+          certificate={currentCourse}
+        />;
       case "profile":
         return <Profile navigateTo={navigateTo} currentUser={currentUser} handleLogout={handleLogout} />;
       case "admin-dashboard":
@@ -513,6 +477,7 @@ case "lectures": {
                 users={users}
                 setCourses={setCourses}
                 setUsers={setUsers}
+               handleLogout={handleLogout}
               />;
       case "trainer-dashboard":
         return <TrainerDashboard 
@@ -520,6 +485,7 @@ case "lectures": {
                 currentUser={currentUser}
                 courses={courses}
                 setCourses={setCourses}
+                 handleLogout={handleLogout} 
               />;
       default:
         return <HomePage navigateTo={navigateTo} currentUser={currentUser} handleLogout={handleLogout} />;

@@ -1,14 +1,24 @@
 // src/pages/Profile.js
 import React, { useState, useEffect } from "react";
 import logo from "../assets/images/logo.png";
+
 const Profile = ({ navigateTo, currentUser, handleLogout }) => {
-  //  استخدام بيانات المستخدم الحقيقية
+  // استخدام بيانات المستخدم الحقيقية
   const [data, setData] = useState(currentUser);
 
-  //  استرجاع تقدم الطالب من localStorage
+  // استرجاع تقدم الطالب من localStorage
   const [userProgress, setUserProgress] = useState({});
 
-  //  تحديث التقدم عند تحميل الصفحة
+  // ✅ استرجاع الشهادات من localStorage
+  const [certificates, setCertificates] = useState([]);
+
+  // استرجاع جميع الدورات
+  const [courses] = useState(() => {
+    const saved = localStorage.getItem("courses");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // تحديث التقدم عند تحميل الصفحة
   useEffect(() => {
     const key = `progress_${currentUser?.email}`;
     const saved = localStorage.getItem(key);
@@ -21,14 +31,34 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
       }
     }
   }, [currentUser?.email]);
+  //  التقييمات (اختياري)
+    const [ratings] = useState(() => {
+      const saved = localStorage.getItem("courseRatings");
+      const allRatings = saved ? JSON.parse(saved) : {};
+      return Object.entries(allRatings)
+        .filter(([key]) => key.startsWith(`${currentUser.email}-`))
+        .map(([key, stars]) => {
+          const courseId = parseInt(key.split('-')[1]);
+          const course = courses.find(c => c.id === courseId);
+          return { course: course?.title, stars };
+        });
+    });
 
-  //  استرجاع جميع الدورات
-  const [courses] = useState(() => {
-    const saved = localStorage.getItem("courses");
-    return saved ? JSON.parse(saved) : [];
-  });
+  // ✅ تحديث الشهادات عند التحميل
+  useEffect(() => {
+    const certKey = `certificates_${currentUser.email}`;
+    const saved = localStorage.getItem(certKey);
+    if (saved) {
+      try {
+        const certs = JSON.parse(saved);
+        setCertificates(certs);
+      } catch (e) {
+        console.error("فشل في تحليل بيانات الشهادات", e);
+      }
+    }
+  }, [currentUser.email]);
 
-  //  الدورات الحالية (تم بدؤها ولكن لم تُكتمل)
+  // الدورات الحالية (تم بدؤها ولكن لم تُكتمل)
   const currentCourses = courses
     .filter(course => {
       const totalLevels = course.levels?.length || 0;
@@ -49,7 +79,7 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
       return { ...course, progress };
     });
 
-  //  الدورات المكتملة (جميع المستويات مكتملة)
+  // الدورات المكتملة (جميع المستويات مكتملة)
   const completedCourses = courses.filter(course => {
     const totalLevels = course.levels?.length || 0;
     if (totalLevels === 0) return false;
@@ -61,26 +91,14 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
     return completedCount === totalLevels;
   });
 
-  //  التقييمات (اختياري)
-  const [ratings] = useState(() => {
-    const saved = localStorage.getItem("courseRatings");
-    const allRatings = saved ? JSON.parse(saved) : {};
-    return Object.entries(allRatings)
-      .filter(([key]) => key.startsWith(`${currentUser.email}-`))
-      .map(([key, stars]) => {
-        const courseId = parseInt(key.split('-')[1]);
-        const course = courses.find(c => c.id === courseId);
-        return { course: course?.title, stars };
-      });
-  });
+  
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false); //  نافذة تغيير الصورة
+  const [showImageModal, setShowImageModal] = useState(false); // نافذة تغيير الصورة
 
-  //  حالة الصورة
+  // حالة الصورة
   const [profileImage, setProfileImage] = useState(() => {
-    //  تحميل الصورة من localStorage أو استخدام افتراضية
     return localStorage.getItem(`profileImage_${currentUser.email}`) || "/assets/images/avatar-placeholder.png";
   });
 
@@ -95,7 +113,7 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  //  حفظ تعديلات الملف الشخصي
+  // حفظ تعديلات الملف الشخصي
   const handleSaveProfile = () => {
     const updatedUser = {
       ...data,
@@ -104,10 +122,8 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
       phone: editPhone,
       birthDate: editBirthDate
     };
-    // تحديث البيانات في الواجهة
     setData(updatedUser);
 
-    // تحديث المستخدم في localStorage
     const users = JSON.parse(localStorage.getItem("users")) || [];
     const userIndex = users.findIndex(u => u.email === currentUser.email);
     if (userIndex !== -1) {
@@ -117,7 +133,7 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
     setShowEditModal(false);
   };
 
-  //  تغيير كلمة المرور
+  // تغيير كلمة المرور
   const handleChangePassword = () => {
     const users = JSON.parse(localStorage.getItem("users")) || [];
     const user = users.find(u => u.email === currentUser.email);
@@ -137,7 +153,6 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
       return;
     }
 
-    // تحديث كلمة المرور
     user.password = newPassword;
     localStorage.setItem("users", JSON.stringify(users));
     alert("تم تغيير كلمة المرور بنجاح!");
@@ -147,7 +162,7 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
     setShowPasswordModal(false);
   };
 
-  //  تغيير صورة الملف الشخصي
+  // تغيير صورة الملف الشخصي
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -155,9 +170,7 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
       reader.onloadend = () => {
         const base64Image = reader.result;
         setProfileImage(base64Image);
-        // حفظ الصورة في localStorage
         localStorage.setItem(`profileImage_${currentUser.email}`, base64Image);
-        // تحديث currentUser
         const updatedUser = { ...currentUser, avatar: base64Image };
         localStorage.setItem("currentUser", JSON.stringify(updatedUser));
       };
@@ -180,12 +193,12 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
             </div>
             
             <div className="flex items-center space-x-4">
-               <button
-            onClick={() => navigateTo("courses")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
-          >
-            العودة إلى الدورات
-          </button>
+              <button
+                onClick={() => navigateTo("courses")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+              >
+                العودة إلى الدورات
+              </button>
               <button 
                 onClick={() => navigateTo("profile")}
                 className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg"
@@ -226,14 +239,12 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
               </div>
             </div>
             <div className="relative">
-              {/* عرض الصورة */}
               <img 
                 src={profileImage} 
                 alt="صورة الملف الشخصي" 
                 className="bg-purple-600 text-white rounded-full h-16 w-16 object-cover"
                 style={{ objectPosition: 'center' }}
               />
-              {/* زر تغيير الصورة */}
               <button
                 onClick={() => setShowImageModal(true)}
                 className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
@@ -275,7 +286,7 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
           </div>
         </div>
 
-        {/* الدورات الحالية، المكتملة، والإنجازات */}
+        {/* الدورات الحالية، المكتملة، والشهادات */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* الدورات الحالية */}
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -314,8 +325,7 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
               <p className="text-gray-500">لم تكمل أي دورة بعد</p>
             )}
           </div>
-
-          {/* التقييمات */}
+           {/* التقييمات */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold mb-4">التقييمات</h2>
             {ratings.length > 0 ? (
@@ -327,6 +337,29 @@ const Profile = ({ navigateTo, currentUser, handleLogout }) => {
               ))
             ) : (
               <p className="text-gray-500">لم تقيّم أي دورة بعد</p>
+            )}
+          </div>
+          
+
+          {/* ✅ الشهادات */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-4">الشهادات</h2>
+            {certificates.length > 0 ? (
+              certificates.map((cert, index) => (
+                <div key={index} className="mb-4 border-b pb-4">
+                  <h3 className="font-bold">{cert.courseTitle}</h3>
+                  <p className="text-sm text-gray-600">مدرب: {cert.instructorName}</p>
+                  <p className="text-sm text-gray-600">تاريخ: {cert.date}</p>
+                  <button
+                    onClick={() => navigateTo("certificate", cert)}
+                    className="text-green-600 hover:underline text-sm"
+                  >
+                    عرض الشهادة
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">لم تحصل على شهادات بعد</p>
             )}
           </div>
         </div>

@@ -1,7 +1,8 @@
 // src/pages/CourseLevelsPage.jsx
 import React, { useState, useEffect } from 'react';
 import logo from "../assets/images/logo.png";
-//  دالة استخراج معرف الفيديو من رابط يوتيوب
+
+// دالة استخراج معرف الفيديو من رابط يوتيوب
 function getYoutubeId(url) {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
@@ -15,7 +16,7 @@ const CourseLevelsPage = ({ navigateTo, currentUser, handleLogout, course }) => 
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizResults, setQuizResults] = useState(null);
 
-  //  تحديث التقدم من localStorage
+  // تحديث التقدم من localStorage
   useEffect(() => {
     const key = `progress_${currentUser.email}`;
     const saved = localStorage.getItem(key);
@@ -27,33 +28,49 @@ const CourseLevelsPage = ({ navigateTo, currentUser, handleLogout, course }) => 
         console.error("فشل في تحليل بيانات التقدم", e);
       }
     }
-  }, [currentUser.email, course.id, showQuiz, quizResults]);
+  }, [currentUser.email, course.id]);
 
-  //  التحقق من حالة المستوى
+  // التحقق من حالة المستوى
   const isLevelLocked = (levelId) => {
-  if (levelId === 1) return false;
-  
-  //  تحقق من أن المستوى السابق مكتمل في هذه الدورة
-  const prevLevelKey = `course_${course.id}_level_${levelId - 1}`;
-  return !userProgress[prevLevelKey]?.completed;
-};
+    if (levelId === 1) return false;
+    const prevLevelKey = `course_${course.id}_level_${levelId - 1}`;
+    return !userProgress[prevLevelKey]?.completed;
+  };
 
-const isLevelCompleted = (levelId) => {
-  const key = `course_${course.id}_level_${levelId}`;
-  return userProgress[key]?.completed;
-};
+  const isLevelCompleted = (levelId) => {
+    const key = `course_${course.id}_level_${levelId}`;
+    return userProgress[key]?.completed;
+  };
+
+  // ✅ التحقق من إكمال الدورة بالكامل
+  const isCourseCompleted = () => {
+    return course.levels.every(level => {
+      const levelKey = `course_${course.id}_level_${level.id}`;
+      return userProgress[levelKey]?.completed;
+    });
+  };
 
   const startLevel = (level) => {
     if (isLevelLocked(level.id)) return;
     setSelectedLevel(level);
   };
 
-  const startQuiz = () => {
-    if (!selectedLevel) return;
-    setShowQuiz(true);
-    setQuizAnswers({});
-    setQuizResults(null);
-  };
+ const startQuiz = () => {
+  if (!selectedLevel) return;
+
+  // ✅ التحقق من وجود أسئلة
+  const quiz = selectedLevel.quiz;
+  if (!quiz || quiz.length === 0) {
+    // ✅ عرض رسالة إذا لم تكن هناك أسئلة
+    alert("❌ لا توجد أسئلة اختبار لهذا المستوى بعد.\nسيتم إضافتها قريبًا.");
+    return;
+  }
+
+  // ✅ إذا كانت هناك أسئلة، ابدأ الاختبار
+  setShowQuiz(true);
+  setQuizAnswers({});
+  setQuizResults(null);
+};
 
   const handleAnswerChange = (questionId, answerIndex) => {
     setQuizAnswers(prev => ({ ...prev, [questionId]: answerIndex }));
@@ -67,12 +84,12 @@ const isLevelCompleted = (levelId) => {
     });
 
     const score = (correct / quiz.length) * 100;
-    const passed = score >= 60;
+    const passed = score >= 70; // ✅ 70% كحد أدنى
 
     setQuizResults({ score, passed });
 
     if (passed) {
-     const levelKey = `course_${course.id}_level_${selectedLevel.id}`;
+      const levelKey = `course_${course.id}_level_${selectedLevel.id}`;
       const progressKey = `progress_${currentUser.email}`;
       const savedProgress = JSON.parse(localStorage.getItem(progressKey)) || {};
 
@@ -84,7 +101,7 @@ const isLevelCompleted = (levelId) => {
       localStorage.setItem(progressKey, JSON.stringify(updatedProgress));
       setUserProgress(updatedProgress);
 
-      //  تحديث currentUser في App.jsx
+      // تحديث currentUser
       const updatedUser = {
         ...currentUser,
         progress: updatedProgress
@@ -110,7 +127,7 @@ const isLevelCompleted = (levelId) => {
     }
   };
 
-  //  قائمة المستويات 
+  // قائمة المستويات 
   if (!selectedLevel && !showQuiz) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -239,7 +256,7 @@ const isLevelCompleted = (levelId) => {
     );
   }
 
-  //  عرض المحاضرات 
+  // عرض المحاضرات 
   if (selectedLevel && !showQuiz) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -282,30 +299,40 @@ const isLevelCompleted = (levelId) => {
             <p className="text-gray-600 mb-6">{selectedLevel.description}</p>
 
             <h3 className="text-lg font-semibold mb-4">المحاضرات:</h3>
-            <div className="space-y-6">
-              {selectedLevel.lectures.map((lecture) => {
-                const videoId = getYoutubeId(lecture.videoUrl);
-                if (!videoId) {
-                  return <p key={lecture.id} className="text-red-600">رابط الفيديو غير صالح</p>;
-                }
-                return (
-                  <div key={lecture.id} className="border rounded-lg overflow-hidden">
-                    <h4 className="bg-gray-100 p-3 font-medium">{lecture.title}</h4>
-                    <div className="aspect-w-16 aspect-h-9">
-                      <iframe
-                        src={`https://www.youtube.com/embed/${videoId}?rel=0`}
-                        title={lecture.title}
-                        className="w-full h-60"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
+            {/* ✅ التحقق من وجود محاضرات */}
+            {selectedLevel.lectures.length > 0 ? (
+              <div className="space-y-6">
+                {selectedLevel.lectures.map((lecture) => {
+                  const videoId = getYoutubeId(lecture.videoUrl);
+                  if (!videoId) {
+                    return <p key={lecture.id} className="text-red-600">رابط الفيديو غير صالح</p>;
+                  }
+                  return (
+                    <div key={lecture.id} className="border rounded-lg overflow-hidden">
+                      <h4 className="bg-gray-100 p-3 font-medium">{lecture.title}</h4>
+                      <div className="aspect-w-16 aspect-h-9">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${videoId}?rel=0`} // ✅ تم إصلاح المسافات الزائدة
+                          title={lecture.title}
+                          className="w-full h-60"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-
+                  );
+                })}
+              </div>
+            ) : (
+              // ✅ رسالة عندما لا توجد محاضرات
+              <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-lg text-center">
+                <p className="text-yellow-800 text-lg">⚠️ ليس هناك محاضرات بعد</p>
+                <p className="text-yellow-600 mt-1">سيتم إضافة المحاضرات قريبًا.</p>
+              </div>
+            )}
+  {/* ✅ عرض زر الاختبار فقط إذا كانت هناك محاضرات */}
+          {selectedLevel.lectures.length > 0 && (
             <div className="mt-8 text-center">
               <button
                 onClick={startQuiz}
@@ -314,15 +341,16 @@ const isLevelCompleted = (levelId) => {
                 أداء اختبار المستوى
               </button>
             </div>
+          )}
           </div>
         </main>
       </div>
     );
   }
-
-  //  عرض نتيجة الاختبار (مُعدّل بالكامل)
+  // عرض نتيجة الاختبار
   if (showQuiz && selectedLevel && quizResults) {
     const quiz = selectedLevel.quiz;
+    const courseCompleted = isCourseCompleted(); // ✅ تم إكمال الدورة؟
 
     return (
       <div className="min-h-screen bg-gray-50">
@@ -393,19 +421,15 @@ const isLevelCompleted = (levelId) => {
                         let textColor = 'text-gray-700';
                         let icon = '';
 
-                        // تحديد لون الخلفية والنص والرمز
                         if (idx === q.correctAnswer) {
-                          // الإجابة الصحيحة
                           bgColor = 'bg-green-100';
                           textColor = 'text-green-800 font-medium';
                           icon = '✅ ';
                         } else if (idx === userAnswer && isWrong) {
-                          // الإجابة التي اختارها الطالب وهي خاطئة
                           bgColor = 'bg-red-100';
                           textColor = 'text-red-800 font-medium';
                           icon = '❌ ';
                         } else {
-                          // الإجابات الأخرى
                           bgColor = 'bg-gray-50';
                           textColor = 'text-gray-600';
                         }
@@ -449,12 +473,42 @@ const isLevelCompleted = (levelId) => {
                   إعادة المحاولة
                 </button>
               )}
-              <button
-                onClick={exitQuiz}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition"
-              >
-                {quizResults.passed ? 'متابعة التعلم' : 'العودة إلى المستويات'}
-              </button>
+              {quizResults.passed && courseCompleted ? (
+                // ✅ عرض زر الشهادة فقط عند إكمال الدورة
+                <button
+                  onClick={() => {
+                    // ✅ حفظ الشهادة قبل العرض
+                    const certKey = `certificates_${currentUser.email}`;
+                    const saved = localStorage.getItem(certKey);
+                    const certs = saved ? JSON.parse(saved) : [];
+
+                    const newCert = {
+                      studentName: currentUser.name,
+                      courseTitle: course.title,
+                      instructorName: course.instructor.name,
+                      date: new Date().toLocaleDateString('ar-SA'),
+                      courseId: course.id
+                    };
+
+                    if (!certs.some(c => c.courseId === course.id)) {
+                      certs.push(newCert);
+                      localStorage.setItem(certKey, JSON.stringify(certs));
+                    }
+
+                    navigateTo("certificate", newCert);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition"
+                >
+                  عرض الشهادة
+                </button>
+              ) : (
+                <button
+                  onClick={exitQuiz}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition"
+                >
+                  {quizResults.passed ? 'متابعة التعلم' : 'العودة إلى المستويات'}
+                </button>
+              )}
             </div>
           </div>
         </main>
@@ -462,7 +516,7 @@ const isLevelCompleted = (levelId) => {
     );
   }
 
-  //  عرض نموذج الاختبار
+  // عرض نموذج الاختبار
   if (showQuiz && selectedLevel && !quizResults) {
     const quiz = selectedLevel.quiz;
 

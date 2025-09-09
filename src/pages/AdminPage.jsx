@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 
-const AdminDashboard = ({ navigateTo, currentUser, courses, users, setCourses, setUsers }) => {
+const AdminDashboard = ({ navigateTo, currentUser,  handleLogout, courses, users, setCourses, setUsers }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -213,7 +213,7 @@ const AdminDashboard = ({ navigateTo, currentUser, courses, users, setCourses, s
             {activeTab === "users" && "إدارة المستخدمين"}
           </h2>
           <button
-            onClick={() => navigateTo("home")}
+            onClick={ handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
           >
             تسجيل الخروج

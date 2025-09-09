@@ -109,9 +109,12 @@ const Login = ({ navigateTo, handleLogin, currentUser }) => {
           <button onClick={() => navigateTo("register")} className="text-blue-600 hover:underline">
             إنشاء حساب
           </button>
-          <button onClick={() => navigateTo("forgot-password")} className="text-gray-500 hover:underline text-xs">
-            نسيت كلمة المرور؟
-             </button>
+          <button 
+       onClick={() => navigateTo("forgot-password")} 
+      className="text-blue-600 hover:underline text-sm mt-2 block"
+>
+  نسيت كلمة المرور؟
+</button>
         </p>
       </div>
     </div>
